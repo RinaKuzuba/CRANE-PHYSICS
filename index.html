@@ -2,6 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>クレーン力学可視化シミュレーター</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+JP:wght@400;700&display=swap');
@@ -11,57 +12,156 @@
     --torq:#ff4081; --grip:#448aff; --text:#c8d6e5; --dim:#4a5568;
   }
   *{box-sizing:border-box;margin:0;padding:0;}
-  body{font-family:'Noto Sans JP',sans-serif;background:var(--bg);color:var(--text);
-    min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:20px;gap:14px;}
-  h1{font-family:'Share Tech Mono',monospace;font-size:17px;color:var(--accent);
-    letter-spacing:3px;text-transform:uppercase;border-bottom:1px solid var(--border);
-    padding-bottom:8px;width:100%;max-width:880px;text-align:center;}
-  .layout{display:flex;gap:14px;width:100%;max-width:880px;align-items:flex-start;}
-  #canvas-wrap{position:relative;flex:1;}
-  canvas{display:block;background:#080b12;border:1px solid var(--border);
-    border-radius:4px;cursor:crosshair;width:100%;}
-  .side-panel{width:215px;display:flex;flex-direction:column;gap:10px;flex-shrink:0;}
-  .card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:11px;}
-  .card-title{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--accent);
-    letter-spacing:2px;margin-bottom:9px;text-transform:uppercase;}
-  .setting-row{display:flex;justify-content:space-between;align-items:center;
-    margin-bottom:7px;font-size:11px;gap:6px;}
+
+  body{
+    font-family:'Noto Sans JP',sans-serif;
+    background:var(--bg);color:var(--text);
+    min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;
+    padding:12px;gap:12px;
+  }
+
+  h1{
+    font-family:'Share Tech Mono',monospace;
+    font-size:clamp(13px,3vw,18px);
+    color:var(--accent);letter-spacing:2px;text-transform:uppercase;
+    border-bottom:1px solid var(--border);padding-bottom:8px;
+    width:100%;text-align:center;
+  }
+
+  /* ── レイアウト ─────────────────── */
+  .layout{
+    display:flex;gap:12px;width:100%;
+    align-items:flex-start;
+    /* PCは横並び、スマホは縦1列 */
+    flex-direction:row;
+  }
+
+  #canvas-wrap{
+    position:relative;
+    flex:1;
+    min-width:0; /* flexで潰れないように */
+  }
+
+  canvas{
+    display:block;background:#080b12;
+    border:1px solid var(--border);border-radius:4px;
+    cursor:crosshair;
+    width:100%;   /* 親に合わせてリサイズ */
+    height:auto;
+    touch-action:none;
+  }
+
+  .side-panel{
+    width:200px;
+    flex-shrink:0;
+    display:flex;flex-direction:column;gap:8px;
+  }
+
+  /* ── カード ────────────────────── */
+  .card{
+    background:var(--panel);border:1px solid var(--border);
+    border-radius:6px;padding:10px;
+  }
+  .card-title{
+    font-family:'Share Tech Mono',monospace;
+    font-size:clamp(9px,2vw,11px);
+    color:var(--accent);letter-spacing:2px;
+    margin-bottom:8px;text-transform:uppercase;
+  }
+
+  .setting-row{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:8px;font-size:clamp(11px,2.5vw,13px);gap:8px;
+  }
   .setting-row:last-child{margin-bottom:0;}
-  .setting-label{color:var(--dim);white-space:nowrap;}
-  input[type="range"]{-webkit-appearance:none;flex:1;min-width:0;height:4px;
-    background:var(--border);border-radius:2px;outline:none;}
-  input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;
-    background:var(--accent);border-radius:50%;cursor:pointer;}
-  .value-display{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--accent);
-    min-width:34px;text-align:right;flex-shrink:0;}
-  select{background:#1a2030;color:var(--text);border:1px solid var(--border);
-    padding:3px 5px;font-size:10px;border-radius:3px;width:100%;margin-top:2px;}
-  .phys-row{display:flex;justify-content:space-between;font-size:10px;
-    margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid var(--border);}
+  .setting-label{color:var(--dim);white-space:nowrap;flex-shrink:0;}
+
+  input[type="range"]{
+    -webkit-appearance:none;flex:1;min-width:0;
+    height:6px;background:var(--border);border-radius:3px;outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:18px;height:18px; /* タッチしやすいサイズ */
+    background:var(--accent);border-radius:50%;cursor:pointer;
+  }
+
+  .value-display{
+    font-family:'Share Tech Mono',monospace;
+    font-size:clamp(10px,2vw,12px);color:var(--accent);
+    min-width:38px;text-align:right;flex-shrink:0;
+  }
+
+  select{
+    background:#1a2030;color:var(--text);border:1px solid var(--border);
+    padding:5px 6px;font-size:clamp(11px,2.5vw,13px);
+    border-radius:3px;width:100%;margin-top:2px;
+  }
+
+  /* ── 物理パネル ─────────────────── */
+  .phys-row{
+    display:flex;justify-content:space-between;
+    font-size:clamp(10px,2vw,12px);
+    margin-bottom:5px;padding-bottom:5px;border-bottom:1px solid var(--border);
+  }
   .phys-row:last-child{border-bottom:none;margin-bottom:0;}
   .phys-name{color:var(--dim);}
-  .phys-val{font-family:'Share Tech Mono',monospace;font-size:10px;}
-  .val-good{color:var(--good);} .val-warn{color:var(--warn);} .val-danger{color:var(--torq);}
-  .result-bar{height:28px;border-radius:4px;display:flex;align-items:center;
-    justify-content:center;font-family:'Share Tech Mono',monospace;font-size:13px;
-    font-weight:bold;letter-spacing:2px;transition:background .3s;margin-bottom:7px;}
-  .legend{display:flex;flex-direction:column;gap:5px;}
-  .legend-row{display:flex;align-items:center;gap:6px;font-size:10px;}
-  .legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-  .legend-line{width:20px;height:3px;flex-shrink:0;}
-  .controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px;}
-  button{font-family:'Share Tech Mono',monospace;font-size:12px;letter-spacing:1px;
-    padding:8px 16px;border:1px solid;border-radius:4px;cursor:pointer;
-    background:transparent;transition:all .15s;}
+  .phys-val{font-family:'Share Tech Mono',monospace;}
+  .val-good{color:var(--good);}.val-warn{color:var(--warn);}.val-danger{color:var(--torq);}
+
+  /* ── 結果バー ─────────────────── */
+  .result-bar{
+    height:32px;border-radius:4px;display:flex;align-items:center;
+    justify-content:center;font-family:'Share Tech Mono',monospace;
+    font-size:clamp(12px,2.5vw,14px);
+    font-weight:bold;letter-spacing:2px;transition:background .3s;margin-bottom:7px;
+  }
+
+  /* ── 凡例 ─────────────────────── */
+  .legend{display:flex;flex-direction:column;gap:6px;}
+  .legend-row{display:flex;align-items:center;gap:6px;font-size:clamp(10px,2vw,12px);}
+  .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .legend-line{width:22px;height:3px;flex-shrink:0;}
+
+  /* ── ボタン ─────────────────────── */
+  .controls{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:10px;}
+  button{
+    font-family:'Share Tech Mono',monospace;
+    font-size:clamp(13px,3vw,15px);
+    letter-spacing:1px;
+    padding:10px 22px;
+    border:1px solid;border-radius:4px;cursor:pointer;
+    background:transparent;transition:all .15s;
+    min-width:90px;
+    -webkit-tap-highlight-color:transparent;
+  }
   #btn-start{color:var(--good);border-color:var(--good);}
-  #btn-start:hover{background:var(--good);color:#000;}
+  #btn-start:hover,#btn-start:active{background:var(--good);color:#000;}
   #btn-start:disabled{opacity:.3;cursor:not-allowed;}
   #btn-reset{color:var(--warn);border-color:var(--warn);}
-  #btn-reset:hover{background:var(--warn);color:#fff;}
-  .hint{font-size:10px;color:var(--dim);text-align:center;
-    font-family:'Share Tech Mono',monospace;margin-top:5px;}
-  kbd{background:var(--border);padding:1px 4px;border-radius:3px;font-size:9px;}
-  .divider{height:1px;background:var(--border);margin:5px 0;}
+  #btn-reset:hover,#btn-reset:active{background:var(--warn);color:#fff;}
+
+  .hint{
+    font-size:clamp(9px,2vw,11px);color:var(--dim);
+    text-align:center;font-family:'Share Tech Mono',monospace;margin-top:6px;
+  }
+  kbd{background:var(--border);padding:1px 5px;border-radius:3px;}
+  .divider{height:1px;background:var(--border);margin:6px 0;}
+
+  /* ── スマホ縦1列レイアウト ──────── */
+  @media (max-width: 640px){
+    body{padding:8px;gap:8px;}
+    .layout{flex-direction:column;}
+    .side-panel{
+      width:100%;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+    /* ARM / ITEM は2列に並べる、PHYSICS・RESULT・LEGENDも均等に */
+    .card{padding:10px;}
+  }
 </style>
 </head>
 <body>
